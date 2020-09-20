@@ -252,14 +252,21 @@ int websocket_send(int socket, const unsigned char *data, size_t size,
 	}
 	context_data *ctx_data = (context_data *)lws_context_user(context);
 	char buf[100];
-	snprintf(buf, sizeof(buf), "%s:%d", addr_str, port);
+	char actual_addr_str[NETADDR_MAXSTRSIZE];
+	if (strcmp(addr_str, "0.0.0.0") == 0){
+		dbg_msg("websocket", "get address 0.0.0.0, actual use 127.0.0.1");
+		str_format(actual_addr_str, sizeof(actual_addr_str), "127.0.0.1");
+	} else {
+		strncpy(actual_addr_str, addr_str, NETADDR_MAXSTRSIZE);
+	}
+	snprintf(buf, sizeof(buf), "%s:%d", actual_addr_str, port);
 	std::string addr_str_with_port = std::string(buf);
 	struct per_session_data *pss = ctx_data->port_map[addr_str_with_port];
 	if(pss == NULL)
 	{
 		struct lws_client_connect_info ccinfo = {0};
 		ccinfo.context = context;
-		ccinfo.address = addr_str;
+		ccinfo.address = actual_addr_str;
 		ccinfo.port = port;
 		ccinfo.protocol = protocols[0].name;
 		lws *wsi = lws_client_connect_via_info(&ccinfo);
